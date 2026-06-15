@@ -1,11 +1,14 @@
 import type { GameMode, RoundResult } from "./types";
-import { CHILL_MAX_MISSES, TIME_PENALTY_MS } from "./types";
+import {
+  CHILL_MAX_MISSES,
+  TIMER_DECREMENT_MS,
+  TIMER_INCREMENT_MS,
+} from "./types";
 
 interface Props {
   mode: GameMode;
   rounds: RoundResult[];
   misses: number;
-  totalPenaltyMs: number;
   gameStartTime: number | null;
   gameEndTime: number | null;
   onRestart: () => void;
@@ -27,7 +30,6 @@ export function EndScreen({
   mode,
   rounds,
   misses,
-  totalPenaltyMs,
   gameStartTime,
   gameEndTime,
   onRestart,
@@ -62,24 +64,12 @@ export function EndScreen({
               highlight
             />
             <StatRow label="Misses" value={String(misses)} />
-            <StatRow
-              label="Penalty added"
-              value={fmt(totalPenaltyMs)}
-              warn={misses > 0}
-            />
-            <StatRow label="Raw time" value={fmt(totalElapsed)} />
-            <StatRow
-              label="Final time (raw + penalty)"
-              value={fmt(totalElapsed + totalPenaltyMs)}
-              highlight
-            />
+            <StatRow label="Time survived" value={fmt(totalElapsed)} />
             <StatRow label="Avg reaction time" value={avgReaction(rounds)} />
-            {misses > 0 && (
-              <p className="penalty-note">
-                {misses} miss{misses !== 1 ? "es" : ""} ×{" "}
-                {TIME_PENALTY_MS / 1000}s = {fmt(totalPenaltyMs)} added
-              </p>
-            )}
+            <p className="penalty-note">
+              Each hit +{TIMER_INCREMENT_MS / 1000}s · each miss −
+              {TIMER_DECREMENT_MS / 1000}s
+            </p>
           </>
         )}
 

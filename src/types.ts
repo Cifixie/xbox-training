@@ -35,7 +35,7 @@ export interface GameState {
   promptStartTime: number | null;
   rounds: RoundResult[];
   misses: number;
-  totalPenaltyMs: number; // for 'time' mode
+  timeDeadline: number | null; // for 'time' mode: timestamp the countdown hits 0
   gameStartTime: number | null;
   gameEndTime: number | null;
 }
@@ -73,7 +73,11 @@ export const ALL_PROMPTS: PromptType[] = [
 export const PROMPT_TIMEOUT_MS = 3000;
 export const NEXT_PROMPT_DELAY_MS = 500;
 export const CHILL_MAX_MISSES = 10;
-export const TIME_PENALTY_MS = 500;
+
+// 'time' mode countdown: starts at 1 minute, each hit adds time, each miss removes it
+export const TIME_MODE_START_MS = 60000;
+export const TIMER_INCREMENT_MS = 300;
+export const TIMER_DECREMENT_MS = 500;
 
 export const PROMPT_LABELS: Record<PromptType, string> = {
   A: "A",

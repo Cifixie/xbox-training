@@ -14,7 +14,9 @@ import {
   NEXT_PROMPT_DELAY_MS,
   PROMPT_TIMEOUT_MS,
   STICK_THRESHOLD,
-  TIME_PENALTY_MS,
+  TIME_MODE_START_MS,
+  TIMER_DECREMENT_MS,
+  TIMER_INCREMENT_MS,
 } from "./types.ts";
 import { StartScreen } from "./StartScreen.tsx";
 import { GameScreen } from "./GameScreen.tsx";
@@ -36,7 +38,7 @@ function initialState(): GameState {
     promptStartTime: null,
     rounds: [],
     misses: 0,
-    totalPenaltyMs: 0,
+    timeDeadline: null,
     gameStartTime: null,
     gameEndTime: null,
   };
@@ -80,7 +82,6 @@ export default function App() {
         };
         const newMisses = s.misses + 1;
         const newRounds = [...s.rounds, result];
-        const newPenalty = s.totalPenaltyMs + TIME_PENALTY_MS;
 
         if (s.mode === "survive") {
           return {
@@ -102,11 +103,22 @@ export default function App() {
             gameEndTime: Date.now(),
           };
         }
+        if (s.mode === "time") {
+          return {
+            ...s,
+            rounds: newRounds,
+            misses: newMisses,
+            timeDeadline:
+              s.timeDeadline !== null
+                ? s.timeDeadline - TIMER_DECREMENT_MS
+                : s.timeDeadline,
+            currentPrompt: null,
+          };
+        }
         return {
           ...s,
           rounds: newRounds,
           misses: newMisses,
-          totalPenaltyMs: newPenalty,
           currentPrompt: null,
         };
       });
@@ -159,12 +171,15 @@ export default function App() {
           ...prev,
           rounds: [...prev.rounds, result],
           currentPrompt: null,
+          timeDeadline:
+            prev.mode === "time" && prev.timeDeadline !== null
+              ? prev.timeDeadline + TIMER_INCREMENT_MS
+              : prev.timeDeadline,
         }));
         setTimeout(() => showNextPromptRef.current?.(), NEXT_PROMPT_DELAY_MS);
       } else {
         setState((prev) => {
           const newMisses = prev.misses + 1;
-          const newPenalty = prev.totalPenaltyMs + TIME_PENALTY_MS;
           const newRounds = [...prev.rounds, result];
 
           if (prev.mode === "survive") {
@@ -189,11 +204,21 @@ export default function App() {
               gameEndTime: Date.now(),
             };
           }
+          if (prev.mode === "time") {
+            return {
+              ...prev,
+              rounds: newRounds,
+              misses: newMisses,
+              timeDeadline:
+                prev.timeDeadline !== null
+                  ? prev.timeDeadline - TIMER_DECREMENT_MS
+                  : prev.timeDeadline,
+            };
+          }
           return {
             ...prev,
             rounds: newRounds,
             misses: newMisses,
-            totalPenaltyMs: newPenalty,
           };
         });
       }
@@ -258,11 +283,13 @@ export default function App() {
   const handleStart = useCallback(
     (mode: GameMode) => {
       clearPromptTimeout();
+      const now = Date.now();
       setState({
         ...initialState(),
         mode,
         phase: "playing",
-        gameStartTime: Date.now(),
+        gameStartTime: now,
+        timeDeadline: mode === "time" ? now + TIME_MODE_START_MS : null,
       });
       setTimeout(() => showNextPromptRef.current?.(), NEXT_PROMPT_DELAY_MS);
     },
@@ -278,6 +305,32 @@ export default function App() {
     if (state.phase === "end") clearPromptTimeout();
   }, [state.phase, clearPromptTimeout]);
 
+  // 'time' mode: end the game the moment the countdown reaches zero.
+  useEffect(() => {
+    if (state.phase !== "playing" || state.mode !== "time") return;
+    const id = setInterval(() => {
+      const s = stateRef.current;
+      if (
+        s.phase === "playing" &&
+        s.timeDeadline !== null &&
+        Date.now() >= s.timeDeadline
+      ) {
+        clearPromptTimeout();
+        setState((prev) =>
+          prev.phase === "playing"
+            ? {
+                ...prev,
+                phase: "end",
+                currentPrompt: null,
+                gameEndTime: Date.now(),
+              }
+            : prev,
+        );
+      }
+    }, 100);
+    return () => clearInterval(id);
+  }, [state.phase, state.mode, clearPromptTimeout]);
+
   return (
     <div className="app">
       {state.phase === "start" && <StartScreen onStart={handleStart} />}
@@ -289,6 +342,7 @@ export default function App() {
           misses={state.misses}
           promptTimeoutMs={PROMPT_TIMEOUT_MS}
           promptStartTime={state.promptStartTime}
+          timeDeadline={state.timeDeadline}
         />
       )}
       {state.phase === "end" && (
@@ -296,7 +350,6 @@ export default function App() {
           mode={state.mode}
           rounds={state.rounds}
           misses={state.misses}
-          totalPenaltyMs={state.totalPenaltyMs}
           gameStartTime={state.gameStartTime}
           gameEndTime={state.gameEndTime}
           onRestart={handleRestart}

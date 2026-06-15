@@ -9,6 +9,7 @@ interface Props {
   misses: number;
   promptTimeoutMs: number;
   promptStartTime: number | null;
+  timeDeadline: number | null;
 }
 
 function PromptBadge({ type }: { type: PromptType }) {
@@ -63,6 +64,33 @@ function TimerBar({
   );
 }
 
+function CountdownClock({ deadline }: { deadline: number }) {
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, deadline - Date.now()),
+  );
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const tick = () => {
+      setRemaining(Math.max(0, deadline - Date.now()));
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [deadline]);
+
+  const seconds = remaining / 1000;
+  const color = seconds > 10 ? "#4CAF50" : seconds > 5 ? "#FF9800" : "#f44336";
+
+  return (
+    <span className="hud-value" style={{ color }}>
+      {seconds.toFixed(1)}s
+    </span>
+  );
+}
+
 export function GameScreen({
   mode,
   currentPrompt,
@@ -70,6 +98,7 @@ export function GameScreen({
   misses,
   promptTimeoutMs,
   promptStartTime,
+  timeDeadline,
 }: Props) {
   const successes = rounds.filter((r) => r.correct).length;
   const lastResults = rounds.slice(-5).reverse();
@@ -88,6 +117,12 @@ export function GameScreen({
                 : "Chill"}
           </span>
         </div>
+        {mode === "time" && timeDeadline !== null && (
+          <div className="hud-item">
+            <span className="hud-label">Time Left</span>
+            <CountdownClock deadline={timeDeadline} />
+          </div>
+        )}
         <div className="hud-item">
           <span className="hud-label">Hits</span>
           <span className="hud-value success">{successes}</span>

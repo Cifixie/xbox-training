@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { CHILL_MAX_MISSES, TIME_PENALTY_MS, type GameMode } from "./types";
+import {
+  CHILL_MAX_MISSES,
+  TIME_MODE_START_MS,
+  TIMER_DECREMENT_MS,
+  TIMER_INCREMENT_MS,
+  type GameMode,
+} from "./types";
 
 interface Props {
   onStart: (mode: GameMode) => void;
@@ -15,10 +21,9 @@ const MODE_INFO: Record<
     description: "One mistake ends the game. How long can you last?",
   },
   time: {
-    hidden: true,
     label: "Time Attack",
     color: "#FF9800",
-    description: `Each miss adds a ${TIME_PENALTY_MS / 1000}s time penalty. Minimize your total time.`,
+    description: `Start with ${TIME_MODE_START_MS / 1000}s. Each hit +${TIMER_INCREMENT_MS / 1000}s, each miss −${TIMER_DECREMENT_MS / 1000}s. Survive as long as you can.`,
   },
   chill: {
     label: "Chill",
