@@ -75,9 +75,9 @@ export const NEXT_PROMPT_DELAY_MS = 500;
 export const CHILL_MAX_MISSES = 10;
 
 // 'time' mode countdown: starts at 1 minute, each hit adds time, each miss removes it
-export const TIME_MODE_START_MS = 60000;
-export const TIMER_INCREMENT_MS = 300;
-export const TIMER_DECREMENT_MS = 500;
+export const TIME_MODE_START_MS = 40000;
+export const TIMER_INCREMENT_MS = 500;
+export const TIMER_DECREMENT_MS = 1000;
 
 export const PROMPT_LABELS: Record<PromptType, string> = {
   A: "A",
