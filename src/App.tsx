@@ -12,6 +12,8 @@ import {
   ALL_PROMPTS,
   BUTTON_MAP,
   DEFAULT_SETTINGS,
+  HARDER_DECAY_FACTOR,
+  MIN_PROMPT_TIMEOUT_MS,
   NEXT_PROMPT_DELAY_MS,
   STICK_THRESHOLD,
   TIMER_DECREMENT_MS,
@@ -35,6 +37,7 @@ function initialState(): GameState {
     phase: "start",
     currentPrompt: null,
     promptStartTime: null,
+    currentPromptTimeoutMs: null,
     rounds: [],
     misses: 0,
     timeDeadline: null,
@@ -75,7 +78,24 @@ export default function App() {
     clearPromptTimeout();
     const prompt = randomPrompt();
     const now = Date.now();
-    setState((s) => ({ ...s, currentPrompt: prompt, promptStartTime: now }));
+
+    // With "increasingly harder" on, the reaction window shrinks one notch per
+    // prompt shown so far this game, never below the hard floor.
+    const base = settingsRef.current.promptTimeoutMs;
+    const promptsShown = stateRef.current.rounds.length;
+    const timeout = settingsRef.current.increasinglyHarder
+      ? Math.max(
+          MIN_PROMPT_TIMEOUT_MS,
+          Math.round(base * Math.pow(HARDER_DECAY_FACTOR, promptsShown)),
+        )
+      : base;
+
+    setState((s) => ({
+      ...s,
+      currentPrompt: prompt,
+      promptStartTime: now,
+      currentPromptTimeoutMs: timeout,
+    }));
 
     timeoutRef.current = setTimeout(() => {
       setState((s) => {
@@ -130,7 +150,7 @@ export default function App() {
           currentPrompt: null,
         };
       });
-    }, settingsRef.current.promptTimeoutMs);
+    }, timeout);
   }, [clearPromptTimeout]);
 
   useEffect(() => {
@@ -358,7 +378,7 @@ export default function App() {
           currentPrompt={state.currentPrompt}
           rounds={state.rounds}
           misses={state.misses}
-          promptTimeoutMs={settings.promptTimeoutMs}
+          promptTimeoutMs={state.currentPromptTimeoutMs ?? settings.promptTimeoutMs}
           chillMaxMisses={settings.chillMaxMisses}
           promptStartTime={state.promptStartTime}
           timeDeadline={state.timeDeadline}

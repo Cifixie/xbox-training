@@ -298,6 +298,57 @@
   line-height: 1.4;
 }
 
+.setting-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.setting-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.setting-switch-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+
+.setting-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ccc;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.setting-switch input:checked + .setting-switch-track {
+  background: #FF9800;
+  border-color: #FF9800;
+}
+
+.setting-switch input:checked + .setting-switch-track::after {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+.setting-switch input:focus-visible + .setting-switch-track {
+  outline: 2px solid #FF9800;
+  outline-offset: 2px;
+}
+
 .settings-footer {
   display: flex;
   align-items: center;

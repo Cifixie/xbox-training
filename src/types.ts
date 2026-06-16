@@ -33,6 +33,7 @@ export interface GameState {
   phase: GamePhase;
   currentPrompt: Prompt | null;
   promptStartTime: number | null;
+  currentPromptTimeoutMs: number | null; // effective reaction window for the active prompt
   rounds: RoundResult[];
   misses: number;
   timeDeadline: number | null; // for 'time' mode: timestamp the countdown hits 0
@@ -79,6 +80,11 @@ export const TIME_MODE_START_MS = 40000;
 export const TIMER_INCREMENT_MS = 500;
 export const TIMER_DECREMENT_MS = 1000;
 
+// 'increasingly harder' option: each prompt shrinks the reaction window by this
+// multiplicative factor, never dropping below MIN_PROMPT_TIMEOUT_MS.
+export const HARDER_DECAY_FACTOR = 0.96;
+export const MIN_PROMPT_TIMEOUT_MS = 250;
+
 // ---------------------------------------------------------------------------
 // Configurable settings
 // ---------------------------------------------------------------------------
@@ -88,25 +94,38 @@ export interface GameSettings {
   promptTimeoutMs: number; // how long a prompt stays before it's a miss
   chillMaxMisses: number; // misses allowed in Chill mode
   timeModeStartMs: number; // starting clock in Time Attack mode
+  increasinglyHarder: boolean; // shrink the reaction window as you play
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
   promptTimeoutMs: PROMPT_TIMEOUT_MS,
   chillMaxMisses: CHILL_MAX_MISSES,
   timeModeStartMs: TIME_MODE_START_MS,
+  increasinglyHarder: false,
 };
+
+// Keys grouped by the value type their control edits.
+type NumericSettingKey = {
+  [K in keyof GameSettings]: GameSettings[K] extends number ? K : never;
+}[keyof GameSettings];
+type ToggleSettingKey = {
+  [K in keyof GameSettings]: GameSettings[K] extends boolean ? K : never;
+}[keyof GameSettings];
 
 // Generic, metadata-driven description of every setting. The settings modal
 // renders itself purely from this schema, so adding a new setting only
 // requires extending GameSettings, DEFAULT_SETTINGS, and this array.
-export type SettingControl = "slider" | "number";
+export type SettingControl = "slider" | "number" | "toggle";
 
-export interface SettingDef {
-  key: keyof GameSettings;
+interface BaseSettingDef {
   title: string; // short heading shown in the modal
   label: string; // control label
   description: string; // longer explanation
-  control: SettingControl;
+}
+
+export interface NumericSettingDef extends BaseSettingDef {
+  key: NumericSettingKey;
+  control: "slider" | "number";
   min: number; // bounds in display units
   max: number;
   step: number;
@@ -115,6 +134,13 @@ export interface SettingDef {
   toDisplay: (stored: number) => number;
   fromDisplay: (display: number) => number;
 }
+
+export interface ToggleSettingDef extends BaseSettingDef {
+  key: ToggleSettingKey;
+  control: "toggle";
+}
+
+export type SettingDef = NumericSettingDef | ToggleSettingDef;
 
 export const SETTINGS_SCHEMA: SettingDef[] = [
   {
@@ -156,6 +182,13 @@ export const SETTINGS_SCHEMA: SettingDef[] = [
     unit: "s",
     toDisplay: (ms) => Math.round(ms / 1000),
     fromDisplay: (s) => s * 1000,
+  },
+  {
+    key: "increasinglyHarder",
+    title: "Increasingly Harder",
+    label: "Ramp up difficulty",
+    description: `The reaction window keeps shrinking as you play, down to a floor of ${MIN_PROMPT_TIMEOUT_MS}ms.`,
+    control: "toggle",
   },
 ];
 

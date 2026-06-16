@@ -22,6 +22,28 @@ function SettingRow({
   settings: GameSettings;
   onChange: (settings: GameSettings) => void;
 }) {
+  if (def.control === "toggle") {
+    const checked = settings[def.key];
+    return (
+      <div className="setting-row">
+        <div className="setting-head">
+          <span className="setting-title">{def.title}</span>
+          <label className="setting-switch">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(e) =>
+                onChange({ ...settings, [def.key]: e.target.checked })
+              }
+            />
+            <span className="setting-switch-track" aria-hidden="true" />
+          </label>
+        </div>
+        <p className="setting-desc">{def.description}</p>
+      </div>
+    );
+  }
+
   const display = def.toDisplay(settings[def.key]);
 
   const update = (nextDisplay: number) => {
