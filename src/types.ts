@@ -79,6 +79,86 @@ export const TIME_MODE_START_MS = 40000;
 export const TIMER_INCREMENT_MS = 500;
 export const TIMER_DECREMENT_MS = 1000;
 
+// ---------------------------------------------------------------------------
+// Configurable settings
+// ---------------------------------------------------------------------------
+
+// User-tunable values. Each maps to a preset constant used as its default.
+export interface GameSettings {
+  promptTimeoutMs: number; // how long a prompt stays before it's a miss
+  chillMaxMisses: number; // misses allowed in Chill mode
+  timeModeStartMs: number; // starting clock in Time Attack mode
+}
+
+export const DEFAULT_SETTINGS: GameSettings = {
+  promptTimeoutMs: PROMPT_TIMEOUT_MS,
+  chillMaxMisses: CHILL_MAX_MISSES,
+  timeModeStartMs: TIME_MODE_START_MS,
+};
+
+// Generic, metadata-driven description of every setting. The settings modal
+// renders itself purely from this schema, so adding a new setting only
+// requires extending GameSettings, DEFAULT_SETTINGS, and this array.
+export type SettingControl = "slider" | "number";
+
+export interface SettingDef {
+  key: keyof GameSettings;
+  title: string; // short heading shown in the modal
+  label: string; // control label
+  description: string; // longer explanation
+  control: SettingControl;
+  min: number; // bounds in display units
+  max: number;
+  step: number;
+  unit: string; // shown next to the value, e.g. "s"
+  // Conversions between the stored value (ms / count) and the display value.
+  toDisplay: (stored: number) => number;
+  fromDisplay: (display: number) => number;
+}
+
+export const SETTINGS_SCHEMA: SettingDef[] = [
+  {
+    key: "promptTimeoutMs",
+    title: "Reaction Window",
+    label: "Time to react",
+    description:
+      "How long each prompt stays on screen before it counts as a miss.",
+    control: "slider",
+    min: 1,
+    max: 7,
+    step: 1,
+    unit: "s",
+    toDisplay: (ms) => Math.round(ms / 1000),
+    fromDisplay: (s) => s * 1000,
+  },
+  {
+    key: "chillMaxMisses",
+    title: "Chill Lives",
+    label: "Misses allowed",
+    description: "How many misses you get before Chill mode ends.",
+    control: "number",
+    min: 1,
+    max: 10,
+    step: 1,
+    unit: "",
+    toDisplay: (n) => n,
+    fromDisplay: (n) => n,
+  },
+  {
+    key: "timeModeStartMs",
+    title: "Starting Clock",
+    label: "Starting time",
+    description: "How much time you begin with in Time Attack mode.",
+    control: "number",
+    min: 10,
+    max: 60,
+    step: 5,
+    unit: "s",
+    toDisplay: (ms) => Math.round(ms / 1000),
+    fromDisplay: (s) => s * 1000,
+  },
+];
+
 export const PROMPT_LABELS: Record<PromptType, string> = {
   A: "A",
   B: "B",

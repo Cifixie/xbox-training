@@ -1,14 +1,11 @@
 import type { GameMode, RoundResult } from "./types";
-import {
-  CHILL_MAX_MISSES,
-  TIMER_DECREMENT_MS,
-  TIMER_INCREMENT_MS,
-} from "./types";
+import { TIMER_DECREMENT_MS, TIMER_INCREMENT_MS } from "./types";
 
 interface Props {
   mode: GameMode;
   rounds: RoundResult[];
   misses: number;
+  chillMaxMisses: number;
   gameStartTime: number | null;
   gameEndTime: number | null;
   onRestart: () => void;
@@ -30,6 +27,7 @@ export function EndScreen({
   mode,
   rounds,
   misses,
+  chillMaxMisses,
   gameStartTime,
   gameEndTime,
   onRestart,
@@ -80,7 +78,7 @@ export function EndScreen({
               value={String(successes)}
               highlight
             />
-            <StatRow label="Misses" value={`${misses} / ${CHILL_MAX_MISSES}`} />
+            <StatRow label="Misses" value={`${misses} / ${chillMaxMisses}`} />
             <StatRow label="Avg reaction time" value={avgReaction(rounds)} />
             <StatRow label="Total time" value={fmt(totalElapsed)} />
           </>

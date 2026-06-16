@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type {
   GameMode,
   GamePhase,
+  GameSettings,
   GameState,
   Prompt,
   PromptType,
@@ -10,11 +11,9 @@ import type {
 import {
   ALL_PROMPTS,
   BUTTON_MAP,
-  CHILL_MAX_MISSES,
+  DEFAULT_SETTINGS,
   NEXT_PROMPT_DELAY_MS,
-  PROMPT_TIMEOUT_MS,
   STICK_THRESHOLD,
-  TIME_MODE_START_MS,
   TIMER_DECREMENT_MS,
   TIMER_INCREMENT_MS,
 } from "./types.ts";
@@ -46,13 +45,19 @@ function initialState(): GameState {
 
 export default function App() {
   const [state, setState] = useState<GameState>(initialState());
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stateRef = useRef(state);
+  const settingsRef = useRef(settings);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   const prevButtonsRef = useRef<boolean[]>([]);
   const prevAxesRef = useRef<number[]>([]);
@@ -93,7 +98,10 @@ export default function App() {
             gameEndTime: Date.now(),
           };
         }
-        if (s.mode === "chill" && newMisses >= CHILL_MAX_MISSES) {
+        if (
+          s.mode === "chill" &&
+          newMisses >= settingsRef.current.chillMaxMisses
+        ) {
           return {
             ...s,
             rounds: newRounds,
@@ -122,7 +130,7 @@ export default function App() {
           currentPrompt: null,
         };
       });
-    }, PROMPT_TIMEOUT_MS);
+    }, settingsRef.current.promptTimeoutMs);
   }, [clearPromptTimeout]);
 
   useEffect(() => {
@@ -193,7 +201,10 @@ export default function App() {
               gameEndTime: Date.now(),
             };
           }
-          if (prev.mode === "chill" && newMisses >= CHILL_MAX_MISSES) {
+          if (
+            prev.mode === "chill" &&
+            newMisses >= settingsRef.current.chillMaxMisses
+          ) {
             clearPromptTimeout();
             return {
               ...prev,
@@ -289,7 +300,8 @@ export default function App() {
         mode,
         phase: "playing",
         gameStartTime: now,
-        timeDeadline: mode === "time" ? now + TIME_MODE_START_MS : null,
+        timeDeadline:
+          mode === "time" ? now + settingsRef.current.timeModeStartMs : null,
       });
       setTimeout(() => showNextPromptRef.current?.(), NEXT_PROMPT_DELAY_MS);
     },
@@ -333,14 +345,21 @@ export default function App() {
 
   return (
     <div className="app">
-      {state.phase === "start" && <StartScreen onStart={handleStart} />}
+      {state.phase === "start" && (
+        <StartScreen
+          onStart={handleStart}
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
+      )}
       {state.phase === "playing" && (
         <GameScreen
           mode={state.mode}
           currentPrompt={state.currentPrompt}
           rounds={state.rounds}
           misses={state.misses}
-          promptTimeoutMs={PROMPT_TIMEOUT_MS}
+          promptTimeoutMs={settings.promptTimeoutMs}
+          chillMaxMisses={settings.chillMaxMisses}
           promptStartTime={state.promptStartTime}
           timeDeadline={state.timeDeadline}
         />
@@ -350,6 +369,7 @@ export default function App() {
           mode={state.mode}
           rounds={state.rounds}
           misses={state.misses}
+          chillMaxMisses={settings.chillMaxMisses}
           gameStartTime={state.gameStartTime}
           gameEndTime={state.gameEndTime}
           onRestart={handleRestart}

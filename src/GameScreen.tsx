@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameMode, Prompt, PromptType, RoundResult } from "./types";
-import { PROMPT_LABELS, PROMPT_COLORS, CHILL_MAX_MISSES } from "./types";
+import { PROMPT_LABELS, PROMPT_COLORS } from "./types";
 
 interface Props {
   mode: GameMode;
@@ -8,6 +8,7 @@ interface Props {
   rounds: RoundResult[];
   misses: number;
   promptTimeoutMs: number;
+  chillMaxMisses: number;
   promptStartTime: number | null;
   timeDeadline: number | null;
 }
@@ -97,6 +98,7 @@ export function GameScreen({
   rounds,
   misses,
   promptTimeoutMs,
+  chillMaxMisses,
   promptStartTime,
   timeDeadline,
 }: Props) {
@@ -130,7 +132,7 @@ export function GameScreen({
         <div className="hud-item">
           <span className="hud-label">
             {mode === "chill"
-              ? `Misses (${misses}/${CHILL_MAX_MISSES})`
+              ? `Misses (${misses}/${chillMaxMisses})`
               : "Misses"}
           </span>
           <span className="hud-value miss">{misses}</span>
